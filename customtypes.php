@@ -1,7 +1,7 @@
 <?php
  
 /**
-* Plugin Name: Allsaints CustomTypes
+* Plugin Name: Allsaints CustomTypes + Widgets
 * Description: A plugin to create a custom post type and User Roles for Allsaints
 * Version:  1.0
 * Author: Carl Woodfin
@@ -33,7 +33,7 @@ function register_cpt_cp_name() {
 		'labels'              => $labels,
 		'hierarchical'        => true,
 		'description'         => 'description',
-		'taxonomies'          => array( 'category' ),
+		'taxonomies'          => array( 'post_tag', 'category' ),
 		'public'              => true,
 		'show_ui'             => true,
 		'show_in_menu'        => true,
@@ -50,7 +50,6 @@ function register_cpt_cp_name() {
         'map_meta_cap'        => true, 
 		'supports'            => array( 
 									'title', 'editor', 'thumbnail', 
-									'comments', 
 									'revisions', 'post-formats'
 								),
     );
@@ -126,7 +125,6 @@ function register_cpt_cp_year2() {
         'map_meta_cap'        => true, 
 		'supports'            => array( 
 									'title', 'editor', 'thumbnail', 
-									'comments', 
 									'revisions', 'post-formats'
 								),
     );
@@ -804,5 +802,84 @@ add_action('admin_init','psp_add_role_caps',999);
 		
 
 }
+
+// Creating the widget 
+class ass_latest_posts extends WP_Widget {
+
+function __construct() {
+parent::__construct(
+// Base ID of your widget
+'ass_latest_posts', 
+
+// Widget name will appear in UI
+__('Latest Post Widget', 'wpb_widget_domain'), 
+
+// Widget description
+array( 'description' => __( 'All Saints Latest Post Widget', 'wpb_widget_domain' ), ) 
+);
+}
+
+// Creating widget front-end
+// This is where the action happens
+public function widget( $args, $instance ) {
+$title = apply_filters( 'widget_title', $instance['title'] );
+// before and after widget arguments are defined by themes
+echo $args['before_widget'];
+if ( ! empty( $title ) )
+echo $args['before_title'] . $title . $args['after_title'];
+
+// This is where you run the code and display the output
+$r = new WP_Query( apply_filters( 'widget_posts_args', array(
+			'posts_per_page'      => $number,
+			'no_found_rows'       => true,
+			'post_status'         => 'publish',
+			'ignore_sticky_posts' => true
+		) ) );
+
+?>
+<ul class="list-group">
+		<?php while ( $r->have_posts() ) : $r->the_post(); ?>
+			<li class="list-group-item">
+				<a href="<?php the_permalink(); ?>"><?php get_the_title() ? the_title() : the_ID(); ?></a>
+			<?php if ( $show_date ) : ?>
+				<span class="post-date"><?php echo get_the_date(); ?></span>
+			<?php endif; ?>
+			</li>
+		<?php endwhile; ?>
+		</ul>
+
+<?php
+} //This is the closing curly for the custom actions
+		
+// Widget Backend 
+public function form( $instance ) {
+if ( isset( $instance[ 'title' ] ) ) {
+$title = $instance[ 'title' ];
+}
+else {
+$title = __( 'New title', 'wpb_widget_domain' );
+}
+// Widget admin form
+?>
+<p>
+<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label> 
+<input class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>" />
+</p>
+<?php 
+}
+	
+// Updating widget replacing old instances with new
+public function update( $new_instance, $old_instance ) {
+$instance = array();
+$instance['title'] = ( ! empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
+return $instance;
+}
+} // Class wpb_widget ends here
+
+// Register and load the widget
+function wpb_load_widget() {
+	register_widget( 'ass_latest_posts' );
+}
+add_action( 'widgets_init', 'wpb_load_widget' );
 
 ?>
